@@ -52,6 +52,7 @@
 #include <plat/mailbox.h>
 #include <plat/remoteproc.h>
 #include <plat/omap-pm.h>
+#include <plat/clockdomain.h>
 #include <linux/i2c.h>
 #include <linux/gpio.h>
 #include <linux/semaphore.h>
@@ -330,6 +331,9 @@ static struct iommu *ducati_iommu;
 static bool first_time = 1;
 static bool _is_iommu_up;
 static bool _is_mbox_up;
+
+static struct clockdomain *l3_1_clkdm;
+static struct clockdomain *l3_2_clkdm;
 
 /* BIOS flags states for each core in IPU */
 static void __iomem *sysm3Idle;
@@ -1372,6 +1376,21 @@ static inline int ipu_pm_get_iva_hd(struct ipu_pm_object *handle,
 		return PM_UNSUPPORTED;
 	}
 #endif
+
+	/*
+	 * WA in order to be bale to remove syslink constraints during
+	 * AV playback: set L3_1 and L3_2 to NO_SLEEP
+	 */
+	/* Just to avoid look-up on every call to speed up */
+	if (!l3_1_clkdm)
+		l3_1_clkdm = clkdm_lookup("l3_1_clkdm");
+
+	if (!l3_2_clkdm)
+		l3_2_clkdm = clkdm_lookup("l3_2_clkdm");
+
+	omap2_clkdm_deny_idle(l3_2_clkdm);
+	omap2_clkdm_deny_idle(l3_1_clkdm);
+
 	return PM_SUCCESS;
 }
 
@@ -1955,6 +1974,20 @@ static inline int ipu_pm_rel_iva_hd(struct ipu_pm_object *handle,
 		}
 	}
 #endif
+
+	/*
+	 * WA in order to be bale to remove syslink constraints during
+	 * AV playback: WA set L3_1 and L3_2 back to HW_AUTO
+	 */
+	/* Just to avoid look-up on every call to speed up */
+	if (!l3_1_clkdm)
+		l3_1_clkdm = clkdm_lookup("l3_1_clkdm");
+	if (!l3_2_clkdm)
+		l3_2_clkdm = clkdm_lookup("l3_2_clkdm");
+
+	omap2_clkdm_allow_idle(l3_1_clkdm);
+	omap2_clkdm_allow_idle(l3_2_clkdm);
+
 	return PM_SUCCESS;
 error:
 	return PM_UNSUPPORTED;

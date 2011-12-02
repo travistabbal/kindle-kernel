@@ -656,6 +656,9 @@ struct omap_overlay_manager_info {
 	bool alpha_enabled;
 
 	struct omapdss_ovl_cb cb;
+	bool cpr_enable;
+	struct omap_dss_color_weight_coef cpr_coefs;
+
 };
 
 struct omap_overlay_manager {

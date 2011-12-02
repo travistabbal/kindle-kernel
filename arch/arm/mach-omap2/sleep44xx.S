@@ -115,7 +115,7 @@ restore_context:
 	ldr	r4, =OMAP44XX_SAR_RAM_BASE
 	ldr	r9, [r4, #OMAP_TYPE_OFFSET]	@ Get DEVICE type
 	cmp	r9, #0x1			@ Check for HS device
-	bne	skip_enable_smp_bit			@ if GP device
+	bne	gp_set_default_cp15		@ if GP device
 
 	LM_CHECK_IF_CPU0
 	beq	enable_smp_bit				@ if CPU0
@@ -157,6 +157,13 @@ enable_smp_bit:
 	orr	r0, r0, #0x40		@ Enable SMP bit
         mcr     p15, 0, r0, c1, c0, 1
 	isb
+	b	skip_enable_smp_bit
+gp_set_default_cp15:
+	mov r0, #0x810
+	mov r12, #0x114
+	dsb
+	smc #0
+	dsb
 skip_enable_smp_bit:			@ GP device should execute from here
 #ifdef CONFIG_CACHE_L2X0
 	ldr	r2, =OMAP44XX_L2CACHE_BASE
@@ -173,6 +180,7 @@ skip_enable_smp_bit:			@ GP device should execute from here
 	ldr     r12, =0x109		@ Setup L2 AUXCTL value
 	dsb
 	smc     #0
+	dsb
 	b	skip_l2en
 check_por:
 	CPU_REV_CMP #0xa	@Check for 4460 family

@@ -334,6 +334,7 @@ static void OMAPLFBFlipDSS(OMAPLFB_SWAPCHAIN *psSwapChain,
 			if (!display)
 				continue;
 			driver = display->driver;
+			manager->set_manager_info(manager, &manager->info);
 			manager->apply(manager);
 		}
 
@@ -428,13 +429,13 @@ void OMAPLFBPresentSync(OMAPLFB_DEVINFO *psDevInfo,
 			/* Wait first for the DSI bus to be released then update */
 			err = driver->sync(display);
 			OMAPLFBFlipDSS(psDevInfo->psSwapChain, aPhyAddr);
-		} else if (manager && manager->wait_for_vsync) {
+		} else if (manager && manager->wait_for_go) {
 			/*
 			 * Update the video pipelines registers then wait until the
 			 * frame is shown with a VSYNC
 			 */
 			OMAPLFBFlipDSS(psDevInfo->psSwapChain, aPhyAddr);
-			err = manager->wait_for_vsync(manager);
+			err = manager->wait_for_go(manager);
 		}
 
 		if (err)
